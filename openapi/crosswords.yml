@@ -1,0 +1,101 @@
+openapi: 3.0.1
+info:
+  version: 1.0.0
+  title: Crossword provider
+  description: Access to crosswords puzzle generator
+  termsOfService: http://swagger.io/terms/
+  contact:
+    url: https://github.com/ph-preis
+    name: Philipp Preis
+  license:
+    name: MIT
+servers:
+  - url: crosswords.example.org/api
+paths:
+  /crossword:
+    get:
+      description: Generate a new crossword puzzle in the given dimensions
+      responses:
+        '200':
+          description: A new crossword puzzle
+          content:
+            application/json:
+              schema:
+                "$ref": "#/definitions/Crossword"
+components:
+  schemas:
+    Cell:
+      type: object
+      properties:
+        color:
+          type: string
+    CellLetter:
+      allOf:
+      - "$ref": "#/components/schemas/Cell"
+      - type: object
+        properties:
+          letter:
+            type: string
+          solutionWordIndex:
+            type: integer
+    CellQuestions:
+      allOf:
+      - "$ref": "#/components/schemas/Cell"
+      - type: object
+        properties:
+          questions:
+            type: array
+            items:
+              "$ref": "#/components/schemas/Question"
+    Question:
+      type: object
+      properties:
+        question:
+          type: string
+        answerStartCell:
+          enum:
+          - topLeft
+          - top
+          - topRight
+          - right
+          - bottomRight
+          - bottom
+          - bottomLeft
+          - left
+        answerDirection:
+          enum:
+          - right
+          - down
+          - left
+          - up
+        answer:
+          type: string
+    Crossword:
+      type: object
+      required:
+      - id
+      - name
+      - content
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        solutionWord:
+          type: string
+        content:
+          type: array
+          items:
+            type: array
+            items:
+# unfortunately we cannot just use the Cell class here, because the OpenAPI generator will then produce
+# only a vector<vector<Cell>>, which is an unusable data type for returning CellLetter/CellQuestions, as
+# assigning these subclass objects to it removes their non-baseclass properties (object slicing).
+              oneOf:
+                - "$ref": "#/components/schemas/CellLetter"
+                - "$ref": "#/components/schemas/CellQuestions"
